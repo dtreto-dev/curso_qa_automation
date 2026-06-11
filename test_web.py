@@ -1,20 +1,22 @@
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page
 
-def test_busqueda_en_google(page: Page):
-    # 1. Vamos a Google
-    page.goto("https://www.google.com")
+def test_login_saucedemo(page: Page):
+    # 1. Volamos a una página de login ultra rápida y estable
+    page.goto("https://www.saucedemo.com")
     
-    # 2. Localizamos el cuadro de búsqueda usando su atributo 'name' (en Google se llama 'q')
-    # y le decimos que escriba solo
-    cuadro_busqueda = page.locator("textarea[name='q']")
-    cuadro_busqueda.fill("Playwright con Python")
-    # 3. Simulamos que el robot presiona la tecla 'Enter' en el teclado
-    cuadro_busqueda.press("Enter")
+    # 2. Completamos el usuario (en esta web el ID es "user-name")
+    page.locator("#user-name").fill("standard_user")
     
-    # 4. Le damos un segundo de paciencia para que carguen los resultados
-    page.wait_for_timeout(5000)
+    # 3. Completamos la contraseña (el ID es "password")
+    page.locator("#password").fill("secret_sauce")
     
-    # 5. Validamos que la nueva página contenga la palabra de nuestra búsqueda en el título
-    assert "Playwright" in page.title()
-    print("\n¡Búsqueda completada y validada con éxito!")
+    # 4. Hacemos clic en el botón de ingresar (el ID es "login-button")
+    page.locator("#login-button").click()
+    
+    # 5. Freno de mano de 3 segundos para disfrutar el éxito en pantalla
+    page.wait_for_timeout(3000)
+    
+    # 6. Validamos que entramos chequeando que la URL contenga "inventory"
+    assert "inventory" in page.url
+    print("\n¡Login en SauceDemo completado con éxito total!")
