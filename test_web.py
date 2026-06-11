@@ -1,31 +1,28 @@
 import pytest
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import sync_playwright
 
-def test_remover_producto_del_carrito():
-    # Iniciamos Playwright de forma manual para controlar la velocidad
+def test_manejo_de_dropdown():
     with sync_playwright() as p:
-        # Lanzamos el navegador en modo visible (--headed) y con cámara lenta de 1.5 segundos
+        # Mantenemos el slow_mo en 1500 (segundo y medio) para llegar a ver el cambio
         browser = p.chromium.launch(headless=False, slow_mo=1500)
         page = browser.new_page()
         
-        # 1. Login
+        # 1. Login clásico
         page.goto("https://www.saucedemo.com")
         page.locator("#user-name").fill("standard_user")
         page.locator("#password").fill("secret_sauce")
         page.locator("#login-button").click()
         
-        # 2. Agregamos el producto al carrito
-        page.locator("#add-to-cart-sauce-labs-backpack").click()
+        # 2. ACCIÓN NUEVA: Seleccionar opción del menú desplegable
+        # La "caja" del menú tiene la clase ".product_sort_container"
+        # Usamos .select_option() indicando el "value" de la opción que queremos (lo_to_hi = Low to High)
+        page.locator(".product_sort_container").select_option(value="lohi")
         
-        # 3. Hacemos clic en el botón de Remover
-        page.locator("#remove-sauce-labs-backpack").click()
+        # 3. VALIDACIÓN DE QA: Verificamos que el primer producto ahora sea el más barato
+        # El primer producto de la lista debería ser la "Sauce Labs Onesie" (que vale $7.99)
+        primer_producto = page.locator(".inventory_item_name").first.text_content()
         
-        # 4. VALIDACIÓN DE QA AVANZADA: 
-        # Aseguramos que el contador NO esté visible.
-        contador_carrito = page.locator(".shopping_cart_badge")
-        expect(contador_carrito).to_be_hidden()
+        assert primer_producto == "Sauce Labs Onesie"
+        print(f"\n¡Test Exitoso! El menú cambió el orden y el primer producto es: {primer_producto}")
         
-        print("\n¡Test Exitoso! El producto se eliminó en cámara lenta.")
-        
-        # Cerramos el navegador ordenadamente
         browser.close()
