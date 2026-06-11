@@ -1,22 +1,24 @@
 import pytest
 from playwright.sync_api import Page
 
-def test_login_saucedemo(page: Page):
-    # 1. Volamos a una página de login ultra rápida y estable
+def test_agregar_producto_al_carrito(page: Page):
+    # 1. Login clásico (lo que ya dominás)
     page.goto("https://www.saucedemo.com")
-    
-    # 2. Completamos el usuario (en esta web el ID es "user-name")
     page.locator("#user-name").fill("standard_user")
-    
-    # 3. Completamos la contraseña (el ID es "password")
     page.locator("#password").fill("secret_sauce")
-    
-    # 4. Hacemos clic en el botón de ingresar (el ID es "login-button")
     page.locator("#login-button").click()
     
-    # 5. Freno de mano de 3 segundos para disfrutar el éxito en pantalla
-    page.wait_for_timeout(3000)
+    # 2. ACCIÓN NUEVA: Buscamos el botón del primer producto y hacemos CLIC
+    # Usamos el ID del botón específico de la mochila "Sauce Labs Backpack"
+    page.locator("#add-to-cart-sauce-labs-backpack").click()
     
-    # 6. Validamos que entramos chequeando que la URL contenga "inventory"
-    assert "inventory" in page.url
-    print("\n¡Login en SauceDemo completado con éxito total!")
+    # 3. Freno de mano de 2 segundos para ver el cambio con tus propios ojos
+    page.wait_for_timeout(2000)
+    
+    # 4. VALIDACIÓN DE QA: Buscamos el texto que está adentro del círculo del carrito
+    # La clase web del contador se llama ".shopping_cart_badge"
+    texto_carrito = page.locator(".shopping_cart_badge").text_content()
+    
+    # Aseguramos que el robot lea un "1" adentro del carrito
+    assert texto_carrito == "1"
+    print(f"\n¡Test Exitoso! El carrito tiene {texto_carrito} producto adentro.")
