@@ -1,41 +1,56 @@
 import pytest
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
-def test_manejo_de_multiples_pestanas():
+def test_proyecto_integrador_compra_completa():
     with sync_playwright() as p:
-        # El slow_mo en 1500 nos permite ver el nacimiento de la nueva pestaña
-        browser = p.chromium.launch(headless=False, slow_mo=1500)
-        context = browser.new_context()
-        page = context.new_page()
+        # Configuramos un segundo de delay por acción para poder auditar el flujo visualmente
+        browser = p.chromium.launch(headless=False, slow_mo=1000)
+        page = browser.new_page()
         
-        # Margen de seguridad para nuestra conexión
+        # Red de seguridad contra el lag
         page.set_default_navigation_timeout(90000)
         page.set_default_timeout(90000)
         
-        # 1. Volamos a la página base
-        page.goto("https://www.w3schools.com/tags/att_a_target.asp")
+        # ---- PASO 1: LOGIN ----
+        page.goto("https://www.saucedemo.com")
+        page.locator("#user-name").fill("standard_user")
+        page.locator("#password").fill("secret_sauce")
+        page.locator("#login-button").click()
         
-        # 2. CONFIGURACIÓN DEL RADAR: Esperamos que el próximo evento sea una nueva página (pestaña)
-        # Usamos el contexto del navegador para capturar el nacimiento de la solapa
-        with context.expect_page() as nueva_pestana_info:
-            # ACCIÓN: Hacemos clic en el botón "Try it Yourself", que tiene target="_blank" (abre otra pestaña)
-            page.locator("text=Try it Yourself »").first.click()
+        # ---- PASO 2: FILTRAR POR PRECIO ----
+        # Abrimos el dropdown y elegimos precio de menor a mayor (Low to High)
+        page.locator(".product_sort_container").select_option(value="lohi")
         
-        # 3. TOMAMOS EL CONTROL DE LA NUEVA PESTAÑA
-        # Guardamos la nueva solapa en una variable independiente
-        nueva_pagina = nueva_pestana_info.value
+        # ---- PASO 3: AGREGAR AL CARRITO ----
+        # Hacemos clic en el botón del primer producto filtrado (la ropita de bebé)
+        page.locator("#add-to-cart-sauce-labs-onesie").click()
         
-        # Le decimos a la nueva página que use el mismo tiempo de espera por las dudas
-        nueva_pagina.set_default_timeout(90000)
+        # ---- PASO 4: IR AL CARRITO ----
+        # Cliqueamos el contenedor del carrito arriba a la derecha
+        page.locator(".shopping_cart_link").click()
         
-        # 4. VALIDACIÓN DE QA: Operamos dentro de la nueva pestaña
-        # Leemos el título de la pestaña que se acaba de abrir
-        titulo_nueva_pagina = nueva_pagina.title()
+        # ---- PASO 5: CHECKOUT ----
+        # En la pantalla del carrito, presionamos el botón de ir a la caja (Checkout)
+        page.locator("#checkout").click()
         
-        print(f"\n¡Título de la nueva pestaña capturado!: '{titulo_nueva_pagina}'")
+        # ---- PASO 6: FORMULARIO DE ENVÍO ----
+        # Completamos los datos requeridos por el sistema
+        page.locator("#first-name").fill("David")
+        page.locator("#last-name").fill("Treto")
+        page.locator("#postal-code").fill("1425") # CP de Palermo
+        page.locator("#continue").click()
         
-        # Validamos que realmente estamos en la página del editor de W3Schools
-        assert "W3Schools Tryit Editor" in titulo_nueva_pagina
-        print("\n¡Test Exitoso! El robot migró de pestaña y tomó el control absoluto.")
+        # ---- PASO 7: FINALIZAR ----
+        # Revisamos el total y presionamos el botón de cierre "Finish"
+        page.locator("#finish").click()
         
+        # ---- PASO 8: VALIDACIÓN CRÍTICA DE QA ----
+        # Buscamos el encabezado de éxito que confirma que la orden fue procesada
+        mensaje_exito = page.locator(".complete-header").text_content()
+        
+        assert mensaje_exito == "Thank you for your order!"
+        
+        print(f"\n🏆 ¡PROYECTO INTEGRADOR EXITOSO! Compra completada. Mensaje: {mensaje_exito}")
+        
+        # Cerramos las compuertas
         browser.close()
